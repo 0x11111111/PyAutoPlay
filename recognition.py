@@ -2,7 +2,13 @@ import cv2
 
 
 class Recognition:
+    """A broker for game status recognition.
 
+    Attribute:
+        template_name:
+        precondition:
+
+    """
     def __init__(self, template_name, precondition):
 
         self.template_path = ".\\template\\"

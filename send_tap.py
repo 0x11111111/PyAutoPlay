@@ -3,7 +3,12 @@ import time
 
 
 class SendTap:
+    """A broker for events like sending taps.
 
+    Attribute:
+        specific_device:
+
+    """
     def __init__(self, specific_device):
         self.specific_device = specific_device
 

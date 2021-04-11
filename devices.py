@@ -2,6 +2,11 @@ import os
 
 
 class Devices:
+    """A broker for devices.
+
+    Attributes:
+
+    """
     def get_devices(self):
         device_list = []
         adb_devices = os.popen("adb devices")

@@ -5,7 +5,14 @@ import numpy as np
 
 
 class Screencap:
+    """A broker for screencap.
 
+    Attribures:
+        platform:
+        specific_device:
+        std_height:
+
+    """
     def __init__(self, platform_info, specific_device, std_height = 810):
         self.platform_info = platform_info
         self.specific_device = specific_device
