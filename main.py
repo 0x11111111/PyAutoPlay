@@ -15,6 +15,7 @@ def main():
 
     template_name = Arknights.template_name
     finish = Arknights.finish
+    precondition = Arknights.precondition
     status = {
         "interval": 3,
         "captured": False,
@@ -27,7 +28,7 @@ def main():
     platform_info = platform.system()
 
     devices_broker = Devices()
-    recognition_broker = Recognition(template_name)
+    recognition_broker = Recognition(template_name, precondition)
 
     specific_device = None
     while not specific_device:
@@ -73,8 +74,14 @@ def main():
                 continue
 
             else:
-                status["recognized"] = True
                 print(recognition_res)
+                if "precondition" not in recognition_res or recognition_res["precondition"]:
+                    status["recognized"] = True
+
+                else:
+                    status["recognized"] = False
+                    status["captured"] = False
+                    print(recognition_res["warning"])
 
             if status["recognized"]:
                 recognized_position = recognition_res["position"]
