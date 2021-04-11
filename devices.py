@@ -7,11 +7,14 @@ class Devices:
         adb_devices = os.popen("adb devices")
         cmd_output = adb_devices.read()
 
+        print(cmd_output)
+
         raw_devices_list = []
         for line in cmd_output.splitlines():
-            raw_devices_list.append(line)
+            if line.endswith("device"):
+                raw_devices_list.append(line)
 
-        for device_index in range(1, len(raw_devices_list) - 1):
+        for device_index in range(len(raw_devices_list)):
             device = raw_devices_list[device_index]
             device_list.append(device[0:device.find('\t')])
 

@@ -2,32 +2,32 @@ import os
 import platform
 import cv2
 import numpy as np
+import time
 from matplotlib import pyplot as plt
-
+from send_tap import SendTap
 from screencap import Screencap
 from devices import Devices
-
+from recognition import Recognition
 
 def main():
 
+    status = {}
+    status["recognizing"] = False
+    status["captured"] = False
+    status["recognized"] = False
+
     platform_info = platform.system()
 
-    template_path = ".\\template\\"
-    test = "mission_start.png"
-    template_name = [test]
-    template_dict = {}
-
-    for template in template_name:
-        template_full_path = template_path + template_name[0]
-        template_dict[template] = cv2.imread(template_full_path, 1)
-
     devices_broker = Devices()
+    recognition_broker = Recognition()
+
     specific_device = None
     while not specific_device:
         devices_list = devices_broker.get_devices()
 
         if len(devices_list) == 1:
             specific_device = devices_list[0]
+
         elif len(devices_list) > 1:
             for device in devices_list:
                 print(device)
@@ -44,28 +44,43 @@ def main():
             print("No devices detected. Please retry.")
             input()
 
-    cap = Screencap(platform_info, specific_device)
-    captured = cap.screencap()
+    while True:
+        time.sleep(3)
+        screencap_broker = Screencap(platform_info, specific_device)
+        tap_broker = SendTap(specific_device)
+        if (status["recognized"], status["captured"]) == (False, False):
+            while not (captured := screencap_broker.screencap()):
+                continue
 
-    if captured:
-        print(captured)
-        img = cv2.imread(captured, 1)
-        width, height, _= template_dict[test].shape[::]
+            status["captured"] = True
+            status["ratio"] = captured["ratio"]
 
-        recognition_res = cv2.matchTemplate(img, template_dict[test], eval("cv2.TM_CCOEFF_NORMED"))
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(recognition_res)
+            recognition_res = recognition_broker.recognize(captured["path"])
+            if not recognition_res:
+                status["recognized"] = False
+                status["captured"] = False
+                continue
 
-        top_left = max_loc
-        confidence = max_val
-        bottom_right = (top_left[0] + height, top_left[1] + width)
+            else:
+                status["recognized"] = True
+                print(recognition_res)
 
-        cv2.rectangle(img, top_left, bottom_right, 255, 2)
-        plt.imshow(img, cmap = 'gray')
+            if status["recognized"] == True:
+                recognized_position = recognition_res["position"]
+                recognized_ratio = status["ratio"]
 
-        plt.show()
+                if recognized_ratio != 1:
+                    tap_position = (int(recognized_position[0] * recognized_ratio),
+                                    int(recognized_position[1] * recognized_ratio))
 
-        print(top_left)
-        print(bottom_right)
-        print("confidence = {}".format(confidence))
+                else:
+                    tap_position = recognized_position
+
+                print(tap_position)
+                tap_broker.tap(tap_position)
+
+                status["recognized"] = False
+                status["captured"] = False
+
 
     input()
