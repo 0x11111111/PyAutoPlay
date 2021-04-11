@@ -3,10 +3,10 @@ import cv2
 
 class Recognition:
 
-    def __init__(self):
+    def __init__(self, template_name):
 
         self.template_path = ".\\template\\"
-        self.template_name = ["start.png", "mission_start.png", "results.png"]
+        self.template_name = template_name
         self.template_dict = {}
 
         for template in self.template_name:
@@ -27,7 +27,7 @@ class Recognition:
             top_left = max_loc
             confidence = max_val
 
-            print("confidence = {}".format(confidence))
+            # print("confidence = {}".format(confidence))
 
             if confidence < 0.8:
                 continue
