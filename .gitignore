@@ -123,5 +123,6 @@ dmypy.json
 *.iml
 
 # Temporary files
-.tmp/
+tmp/
+/adb/tmp/
 *.bat
