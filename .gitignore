@@ -95,8 +95,9 @@ ENV/
 env.bak/
 venv.bak/
 pyvenv.cfg
-.idea/*
+.idea/
 test/
+Scripts/
 
 # Spyder project settings
 .spyderproject
@@ -115,3 +116,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+.idea/py_auto_play.iml
+*.iml
+
+# Temporary files
+.tmp/
+*.bat
