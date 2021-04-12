@@ -126,3 +126,4 @@ dmypy.json
 tmp/
 /adb/tmp/
 *.bat
+adb/tmp/screenshot.png
