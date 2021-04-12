@@ -2,6 +2,8 @@ import time
 from adb import PyAutoPlay
 from arknights_assistant import Arknights
 
+__version__ = '0.3.1'
+
 
 def main():
 

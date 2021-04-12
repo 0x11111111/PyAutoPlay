@@ -1,4 +1,5 @@
 __version__ = '0.2.1'
+from deprecated import deprecated
 
 import platform
 import time
@@ -8,6 +9,7 @@ import time
 from arknights_assistant import Arknights
 
 
+@deprecated(version='0.2.1', reason='The classes used have been merged into adb.py_auto_play')
 def main():
 
     template_name = Arknights.template_name

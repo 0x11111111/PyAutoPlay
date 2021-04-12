@@ -2,8 +2,10 @@ import os
 from PIL import Image
 import cv2
 import numpy as np
+from deprecated import deprecated
 
 
+@deprecated(version='0.2.1', reason='The class is merged into adb.py_auto_play')
 class Screencap:
     """A broker for screencap.
 

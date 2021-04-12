@@ -1,6 +1,8 @@
 import cv2
+from deprecated import deprecated
 
 
+@deprecated(version='0.2.1', reason='The class is merged into adb.py_auto_play')
 class Recognition:
     """A broker for game status recognition.
 

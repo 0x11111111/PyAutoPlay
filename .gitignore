@@ -95,7 +95,8 @@ ENV/
 env.bak/
 venv.bak/
 pyvenv.cfg
-.idea/
+.idea/*
+test/
 
 # Spyder project settings
 .spyderproject

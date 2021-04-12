@@ -1,6 +1,7 @@
 import os
+from deprecated import deprecated
 
-
+@deprecated(version='0.2.1', reason='The class is merged into adb.py_auto_play')
 class Devices:
     """A broker for devices.
 
