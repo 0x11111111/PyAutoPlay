@@ -18,7 +18,7 @@ class Screencap:
         self.specific_device = specific_device
         self.std_height = std_height
         self.captured_info = {}
-        self.tmp_path = ".\\tmp\\"
+        self.tmp_path = "../tmp\\"
         self.pic_name = "screencap.png"
 
         if not os.path.exists(self.tmp_path):

@@ -11,7 +11,7 @@ class Recognition:
     """
     def __init__(self, template_name, precondition):
 
-        self.template_path = ".\\template\\"
+        self.template_path = "../adb/template\\"
         self.template_name = template_name
         self.template_dict = {}
         self.precondition_dict = {}
