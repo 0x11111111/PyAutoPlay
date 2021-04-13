@@ -127,3 +127,4 @@ tmp/**
 adb/tmp/**
 *.bat
 adb/tmp/screenshot.png
+adb/tmp/screenshot.png

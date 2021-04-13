@@ -1,20 +1,16 @@
-__version__ = '0.2.1'
-from deprecated import deprecated
-
-import platform
 import time
-# from matplotlib import pyplot as plt
+from adb import PyAutoPlay
+from demo.arknights_assistant import Arknights
+
+__version__ = '0.3.2'
 
 
-from arknights_assistant import Arknights
-
-
-@deprecated(version='0.2.1', reason='The classes used have been merged into adb.py_auto_play')
 def main():
 
     template_name = Arknights.template_name
     finish = Arknights.finish
     precondition = Arknights.precondition
+    special_action = Arknights.special_action
     status = {
         "interval": 3,
         "captured": False,
@@ -24,49 +20,46 @@ def main():
         "rounds": 0
     }
 
-    platform_info = platform.system()
-
-    devices_broker = Devices()
-    recognition_broker = Recognition(template_name, precondition)
-
+    pap = PyAutoPlay(template_name, precondition)
     specific_device = None
     while not specific_device:
-        devices_list = devices_broker.get_devices()
+        devices_dict = pap.get_all_hwnd_title()
 
-        if len(devices_list) == 1:
-            specific_device = devices_list[0]
+        if len(devices_dict) == 1:
+            for k, v in devices_dict.items():
+                specific_device = k
 
-        elif len(devices_list) > 1:
-            for device in devices_list:
-                print(device)
+        elif len(devices_dict) > 1:
+            for k, v in devices_dict.items():
+                print("Devices:{} Description:{}".format(k, v))
 
             input_device = input("Please specify a device(abbreviation allowed):")
-            for device in devices_list:
-                if device.startswith(input_device):
-                    specific_device = device
+            for k, v in devices_dict.items():
+                if k.startswith(input_device):
+                    specific_device = k
 
             if not specific_device:
                 print("No devices matched.")
 
-        elif len(devices_list) == 0:
+        elif len(devices_dict) == 0:
             print("No devices detected. Please retry.")
             input()
 
+    pap.set_hwnd(specific_device)
     rounds = int(input("Input rounds:"))
     status["rounds"] = rounds
 
     while True:
         time.sleep(status["interval"])
-        screencap_broker = Screencap(platform_info, specific_device)
-        tap_broker = SendTap(specific_device)
+
         if (status["recognized"], status["captured"]) == (False, False):
-            while not (captured := screencap_broker.screencap()):
+            while not (captured := pap.get_screenshot()):
                 continue
 
             status["captured"] = True
-            status["ratio"] = captured["ratio"]
+            status["ratio"] = pap.ratio
 
-            recognition_res = recognition_broker.recognize(captured["path"])
+            recognition_res = pap.recognize(captured)
             if not recognition_res:
                 status["recognized"] = False
                 status["captured"] = False
@@ -95,8 +88,10 @@ def main():
                 else:
                     tap_position = recognized_position
 
-                print(tap_position)
-                tap_broker.tap(tap_position)
+                if (special := recognition_res['template']) in special_action:
+                    pap.send_action((), special_action[special])
+                else:
+                    pap.send_action(tap_position)
 
                 status["recognized"] = False
                 status["captured"] = False

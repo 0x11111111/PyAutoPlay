@@ -7,36 +7,75 @@ import numpy as np
 
 
 class PyAutoPlay():
+    """This is the main class of PyAutoPlay containing most of the utilities interacting with window content and user.
 
-    def __init__(self, template_name, precondition):
-        self.img_type = 'PNG'
-        self.std_height = 810
+    The instance of this class serves as a broker to handle screenshot, resize, conversion, recognition and
+        implementation of actions.
+
+    Attributes:
+        hwnd (str): A str indicating the device identity.
+        title (str): The title of window.
+        platform_info (str): Differentiate from Windows and Linux platforms.
+        ratio (double): Ratio is set to height of original picture to standard one's. It is used to resize and
+            relocation.
+        template_name (list): A list containing the pictures to be recognized. The pictures are provided in str of their
+            file name and will be called by cv2.imread() to form templates.
+        template_path (str): A str indicating the path of template pictures.
+        tmp_path (str): A str indicating the path of temporary directory, which stores the temporary pictures captured.
+        img_type (str): A str indicating the format of pictures processed. Default and recommendation is 'PNG'.
+        std_height (int): A int representing the standard height of picture to be processed. The value is related with
+            the height of template original picture's full size. Because this program can handle with pictures from
+            different devices with unique size, it need a height as a standard in which all the pictures processed are
+            resized to it. We recommend the height of the picture which the templates are cropped from.
+        precondition (list): A list storing the preconditions required to be satisfied when an event is detected.
+            The records are stored in an individual dict.
+            [
+                {
+                    'event': (str): If the event is detected and needs to perform an action before its precondition is
+                        satisfied. For example, we need to check an agreement before we continue to perform actions.
+                        The check of agreement is the precondition of the actions performing. The 'event' is given by
+                        its file name and should be included in template_name list and located in template_path.
+                    'precondition': (str): The precondition to be satisfied initially. Given by its file name and
+                        required to be located in template_path.
+                    'warning': (str): If the precondition failed to be satisfied, a warning will be issued and uttered
+                        via the result of recognition.
+                }
+            ]
+    """
+    def __init__(self, template_name, precondition, template_path='..\\adb\\template\\', tmp_path='..\\adb\\tmp\\',
+                 img_type='PNG', std_height=810):
         self.hwnd = None
         self.title = ''
         self.platform_info = platform.system()
-        self.tmp_path = '.\\adb\\tmp\\'
         self.ratio = 1
-        self.template_path = '.\\adb\\template\\'
         self.template_name = template_name
-        self.template_dict = dict()
+        self.template_path = template_path
+        self.tmp_path = tmp_path
+        self.img_type = img_type
+        self.std_height = std_height
         self.precondition = precondition
-        self.precondition_dict = dict()
+
+        self.__template_dict = dict()
+        self.__precondition_dict = dict()
 
         os.system('adb devices')
 
+        # Generate the templates stored in __template_dict.
         for template in self.template_name:
             template_full_path = self.template_path + template
-            self.template_dict[template] = cv2.imread(template_full_path, cv2.IMREAD_COLOR)
-            
-        for bind in self.precondition:
-            template_full_path = self.template_path + bind['precondition']
-            if not bind['event'] in self.precondition_dict:
-                self.precondition_dict[bind['event']] = [{'template': cv2.imread(template_full_path, 1),
-                                                          'warning': bind['warning']}]
+            self.__template_dict[template] = cv2.imread(template_full_path, cv2.IMREAD_COLOR)
+
+        # Traverse the list of precondition and fetch the record dict. Then generate the binding information in
+        # __precondition_dict.
+        for record in self.precondition:
+            template_full_path = self.template_path + record['precondition']
+            if not record['event'] in self.__precondition_dict:
+                self.__precondition_dict[record['event']] = [{'template': cv2.imread(template_full_path, 1),
+                                                          'warning': record['warning']}]
 
             else:
-                self.precondition_dict[bind['event']] += {'template': cv2.imread(template_full_path, 1),
-                                                          'warning': bind['warning']}
+                self.__precondition_dict[record['event']] += {'template': cv2.imread(template_full_path, 1),
+                                                          'warning': record['warning']}
 
     def get_all_hwnd_title(self) -> dict:
         """Obtain all the serial number and its name of devices.
@@ -131,17 +170,17 @@ class PyAutoPlay():
         Returns:
             dict: A result of recognition.
                 {
-                    'precondition': bool: Only occurs when the image in template is also included in
+                    'precondition': (bool): Only occurs when the image in template is also included in
                         precondition['event']. True if the condition is satisfied and false otherwise.
-                    'warning': list: Only occurs when the image in template is also included in precondition['event'].
+                    'warning': (list): Only occurs when the image in template is also included in precondition['event'].
                         If satisfied, value is a an empty list and if not, a list including warning information in
                         precondition['warning'] is provided.
-                    'template': str: The name of the template detected.
-                    'position': tuple:((int, int), (int, int)) A rectangular area defined by its left top and bottom
+                    'template': (str): The name of the template detected.
+                    'position': (tuple):((int, int), (int, int)) A rectangular area defined by its left top and bottom
                         right coordination. Mind that the coordination is matched to the resized picture and need to be
                         relocated according to self.ratio.
-                    'confidence': The extent to which the template matches the certain target in screenshot. Usually
-                        values over 0.98 if a match is detected.
+                    'confidence': (double): The extent to which the template matches the certain target in screenshot.
+                        Usually values over 0.97 if a match is detected.
                 }
         """
         im = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
@@ -149,7 +188,7 @@ class PyAutoPlay():
         recognition_res_dict = dict()
         
         for template_name in self.template_name:
-            template = self.template_dict[template_name]
+            template = self.__template_dict[template_name]
             width, height, _ = template.shape[::]
             
             tmp_recognition_res = cv2.matchTemplate(im, template, eval('cv2.TM_CCOEFF_NORMED'))
@@ -162,10 +201,10 @@ class PyAutoPlay():
                 continue
             
             else:
-                if template_name in self.precondition_dict:
+                if template_name in self.__precondition_dict:
                     recognition_res_dict['precondition'] = True
                     recognition_res_dict['warning'] = []
-                    for precondition in self.precondition_dict[template_name]:
+                    for precondition in self.__precondition_dict[template_name]:
                         tmp_precondition_res = cv2.matchTemplate(im, precondition['template'], 
                                                                  eval('cv2.TM_CCOEFF_NORMED'))
                         _, max_val, _, _ = cv2.minMaxLoc(tmp_precondition_res)
