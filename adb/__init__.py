@@ -3,6 +3,6 @@
 """
 __version__ = '0.3.1'
 
-from .pap_adb import PyAutoPlay
+from .pap_adb import PyAutoPlay_adb
 
-__all__ = ["PyAutoPlay"]
+__all__ = ["PyAutoPlay_adb"]

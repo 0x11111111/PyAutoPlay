@@ -4,9 +4,10 @@ import platform
 from PIL import Image
 import cv2
 import numpy as np
+from typing import Union, Optional
 
 
-class PyAutoPlay():
+class PyAutoPlay_adb():
     """This is the main class of PyAutoPlay containing most of the utilities interacting with window content and user.
 
     The instance of this class serves as a broker to handle screenshot, resize, conversion, recognition and
