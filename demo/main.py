@@ -1,5 +1,5 @@
 import time
-from adb import PyAutoPlay
+from adb import PyAutoPlay_adb
 from demo.arknights_assistant import Arknights
 
 __version__ = '0.3.2'
@@ -20,7 +20,7 @@ def main():
         "rounds": 0
     }
 
-    pap = PyAutoPlay(template_name, precondition)
+    pap = PyAutoPlay_adb(template_name, precondition)
     specific_device = None
     while not specific_device:
         devices_dict = pap.get_all_hwnd_title()
