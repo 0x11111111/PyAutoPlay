@@ -1,7 +1,7 @@
 """
 
 """
-__version__ = '0.3.1'
+__version__ = '0.3.3'
 
 from .pap_adb import PyAutoPlay_adb
 
