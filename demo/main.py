@@ -5,7 +5,7 @@ sys.path.append('..')
 from adb import PyAutoPlay_adb
 
 
-__version__ = '0.3.3'
+__version__ = '0.3.4'
 
 
 def main():

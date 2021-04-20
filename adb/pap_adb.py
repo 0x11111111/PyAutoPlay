@@ -136,7 +136,8 @@ class PyAutoPlay_adb():
         if not os.path.exists(self.tmp_path):
             os.mkdir(self.tmp_path)
 
-        screenshot_path = self.tmp_path + 'screenshot.' + self.img_type.lower()
+        # Pid is used to distinguish from different threads.
+        screenshot_path = self.tmp_path + 'screenshot_' + str(os.getpid()) + '.' + self.img_type.lower()
         os.system('adb -s {} exec-out screencap -p > {}'.format(self.hwnd, screenshot_path))
 
         if self.platform_info == 'Windows':
