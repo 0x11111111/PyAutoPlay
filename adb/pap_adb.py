@@ -14,7 +14,7 @@ class PyAutoPlay_adb():
         implementation of actions.
 
     Attributes:
-        hwnd (str): A str indicating the device identity.
+        id (str): A str indicating the device identity.
         title (str): The title of window.
         platform_info (str): Differentiate from Windows and Linux platforms.
         ratio (double): Ratio is set to height of original picture to standard one's. It is used to resize and
@@ -45,7 +45,7 @@ class PyAutoPlay_adb():
     """
     def __init__(self, template_name, precondition, template_path='..\\adb\\template\\', tmp_path='..\\adb\\tmp\\',
                  img_type='PNG', std_height=810):
-        self.hwnd = None
+        self.id = None
         self.title = ''
         self.platform_info = platform.system()
         self.ratio = 1
@@ -78,13 +78,13 @@ class PyAutoPlay_adb():
                 self.__precondition_dict[record['event']] += {'template': cv2.imread(template_full_path, 1),
                                                           'warning': record['warning']}
 
-    def get_all_hwnd_title(self) -> dict:
+    def get_all_id_title(self) -> dict:
         """Obtain all the serial number and its name of devices.
 
         Returns:
             dict: A dict that holds both the serial number(str) and its name of devices.
         """
-        hwnd_title = dict()
+        id_title = dict()
         device_list = []
         get_devices = os.popen('adb devices')
         cmd_output = get_devices.read()
@@ -96,20 +96,20 @@ class PyAutoPlay_adb():
         for device in device_list:
             get_titles = os.popen('adb -s {} shell getprop ro.build.id'.format(device))
             title = get_titles.read().strip()
-            hwnd_title[device] = title
+            id_title[device] = title
 
-        return hwnd_title
+        return id_title
 
-    def set_hwnd(self, hwnd):
-        """Set the Attribute self.hwnd to hwmd.
+    def set_id(self, id):
+        """Set the Attribute self.id to hwmd.
 
         Args:
-            hwnd (str): a serial number of a device.
+            id (str): a serial number of a device.
 
         Returns:
             None
         """
-        self.hwnd = hwnd
+        self.id = id
 
     def sleep(self, _time):
         """Encapsulation of time.sleep().
@@ -123,7 +123,7 @@ class PyAutoPlay_adb():
         time.sleep(_time)
 
     def get_screenshot(self) -> Image.Image:
-        """Get a screenshot from self.hwnd device and adapt it.
+        """Get a screenshot from self.id device and adapt it.
 
         The method will place the temporary image into self.tmp_path.
         The temporary image is converted if the platform is because of the nuances of '\r\n' and '\r'.
@@ -138,7 +138,7 @@ class PyAutoPlay_adb():
 
         # Pid is used to distinguish from different threads.
         screenshot_path = self.tmp_path + 'screenshot_' + str(os.getpid()) + '.' + self.img_type.lower()
-        os.system('adb -s {} exec-out screencap -p > {}'.format(self.hwnd, screenshot_path))
+        os.system('adb -s {} exec-out screencap -p > {}'.format(self.id, screenshot_path))
 
         if self.platform_info == 'Windows':
             with open(screenshot_path, 'rb') as f:
@@ -243,7 +243,7 @@ class PyAutoPlay_adb():
 
         # Special action is by default None and only in this case a tap on position is sent directly.
         if action is None:
-            os.system('adb -s {} shell input tap {} {}'.format(self.hwnd, position[0], position[1]))
+            os.system('adb -s {} shell input tap {} {}'.format(self.id, position[0], position[1]))
 
         else:
             # If action[3](position) is especially designated and not equal to (0, 0),
@@ -263,7 +263,7 @@ class PyAutoPlay_adb():
                     self.sleep(action[1])
 
                 for i in range(action[2]):
-                    os.system('adb -s {} shell input tap {} {}'.format(self.hwnd, position[0], position[1]))
+                    os.system('adb -s {} shell input tap {} {}'.format(self.id, position[0], position[1]))
             # Completion in future.
             else:
                 pass
