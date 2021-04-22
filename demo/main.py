@@ -5,7 +5,7 @@ sys.path.append('..')
 from adb import PyAutoPlay_adb
 
 
-__version__ = '0.3.4'
+__version__ = '0.3.5'
 
 
 def main():
@@ -26,20 +26,20 @@ def main():
     pap = PyAutoPlay_adb(template_name, precondition)
     specific_device = None
     while not specific_device:
-        devices_dict = pap.get_all_hwnd_title()
+        devices_dict = pap.get_all_title_id()
 
         if len(devices_dict) == 1:
             for k, v in devices_dict.items():
-                specific_device = k
+                specific_device = v
 
         elif len(devices_dict) > 1:
             for k, v in devices_dict.items():
-                print("Devices:{} Description:{}".format(k, v))
+                print("Description:{} Devices id:{}".format(k, v))
 
-            input_device = input("Please specify a device(abbreviation allowed):")
+            input_device = input("Please specify a device id(abbreviation allowed):")
             for k, v in devices_dict.items():
-                if k.startswith(input_device):
-                    specific_device = k
+                if v.startswith(input_device):
+                    specific_device = v
 
             if not specific_device:
                 print("No devices matched.")
@@ -48,7 +48,7 @@ def main():
             print("No devices detected. Please retry.")
             input()
 
-    pap.set_hwnd(specific_device)
+    pap.set_id(specific_device)
     rounds = int(input("Input rounds:"))
     status["rounds"] = rounds
 
