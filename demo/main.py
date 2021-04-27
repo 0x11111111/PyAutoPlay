@@ -5,7 +5,7 @@ sys.path.append('..')
 from adb import PyAutoPlay_adb
 
 
-__version__ = '0.3.5'
+__version__ = '0.4.0'
 
 
 def main():
@@ -56,7 +56,9 @@ def main():
         time.sleep(status["interval"])
 
         if (status["recognized"], status["captured"]) == (False, False):
-            while not (captured := pap.get_screenshot()):
+            captured = pap.get_screenshot()
+            while not (captured):
+                captured = pap.get_screenshot()
                 continue
 
             status["captured"] = True
@@ -91,8 +93,9 @@ def main():
                 else:
                     tap_position = recognized_position
 
-                if (special := recognition_res['template']) in special_action:
-                    pap.send_action((), special_action[special])
+                special = recognition_res['template']
+                if special in special_action:
+                    pap.send_action(tap_position, special_action[special])
                 else:
                     pap.send_action(tap_position)
 

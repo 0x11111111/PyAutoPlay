@@ -139,7 +139,9 @@ class PyAutoPlay_adb():
 
         # Pid is used to distinguish from different threads.
         screenshot_path = self.tmp_path + 'screenshot_' + str(os.getpid()) + '.' + self.img_type.lower()
-        os.system('adb -s {} exec-out screencap -p > {}'.format(self.id, screenshot_path))
+        # The following command should be 'exec-out', which should neglect the replacement of '\r\n' and '\r'.
+        # However, most of the tested adb doesn't work out as definition so 'shell' is used here.
+        os.system('adb -s {} shell screencap -p > {}'.format(self.id, screenshot_path))
 
         if self.platform_info == 'Windows':
             with open(screenshot_path, 'rb') as f:
@@ -148,8 +150,9 @@ class PyAutoPlay_adb():
             with open(screenshot_path, 'wb') as f:
                 f.write(converted_pic)
             f.close()
-
-        im = Image.open(screenshot_path)
+        
+        # The method copy assigned a replica to im and the original image has no reference to it. So it can be safely deleted.
+        im = Image.open(screenshot_path).copy()
         original_size = im.size
         if original_size[1] == self.std_height:
             self.ratio = 1
@@ -187,7 +190,7 @@ class PyAutoPlay_adb():
                         right coordination. Mind that the coordination is matched to the resized picture and need to be
                         relocated according to self.ratio.
                     'confidence': (double): The extent to which the template matches the certain target in screenshot.
-                        Usually values over 0.97 if a match is detected.
+                        Usually values over 0.95 if a match is detected.
                 }
         """
         im = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
