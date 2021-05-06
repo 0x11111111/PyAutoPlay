@@ -1,8 +1,11 @@
 import time
-from adb import PyAutoPlay
-from demo.arknights_assistant import Arknights
+import sys
+from arknights_assistant import Arknights
+sys.path.append('..')
+from adb import PyAutoPlay_adb
 
-__version__ = '0.3.2'
+
+__version__ = '0.4.0'
 
 
 def main():
@@ -20,23 +23,23 @@ def main():
         "rounds": 0
     }
 
-    pap = PyAutoPlay(template_name, precondition)
+    pap = PyAutoPlay_adb(template_name, precondition)
     specific_device = None
     while not specific_device:
-        devices_dict = pap.get_all_hwnd_title()
+        devices_dict = pap.get_all_title_id()
 
         if len(devices_dict) == 1:
             for k, v in devices_dict.items():
-                specific_device = k
+                specific_device = v
 
         elif len(devices_dict) > 1:
             for k, v in devices_dict.items():
-                print("Devices:{} Description:{}".format(k, v))
+                print("Description:{} Devices id:{}".format(k, v))
 
-            input_device = input("Please specify a device(abbreviation allowed):")
+            input_device = input("Please specify a device id(abbreviation allowed):")
             for k, v in devices_dict.items():
-                if k.startswith(input_device):
-                    specific_device = k
+                if v.startswith(input_device):
+                    specific_device = v
 
             if not specific_device:
                 print("No devices matched.")
@@ -45,7 +48,7 @@ def main():
             print("No devices detected. Please retry.")
             input()
 
-    pap.set_hwnd(specific_device)
+    pap.set_id(specific_device)
     rounds = int(input("Input rounds:"))
     status["rounds"] = rounds
 
@@ -53,7 +56,9 @@ def main():
         time.sleep(status["interval"])
 
         if (status["recognized"], status["captured"]) == (False, False):
-            while not (captured := pap.get_screenshot()):
+            captured = pap.get_screenshot()
+            while not (captured):
+                captured = pap.get_screenshot()
                 continue
 
             status["captured"] = True
@@ -88,8 +93,9 @@ def main():
                 else:
                     tap_position = recognized_position
 
-                if (special := recognition_res['template']) in special_action:
-                    pap.send_action((), special_action[special])
+                special = recognition_res['template']
+                if special in special_action:
+                    pap.send_action(tap_position, special_action[special])
                 else:
                     pap.send_action(tap_position)
 
