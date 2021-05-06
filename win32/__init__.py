@@ -24,6 +24,10 @@ __key={
     'kb_shift':[win32con.MK_SHIFT],
 }
 
+class _POINT(ctypes.Structure):
+    _fields_ = [("x", ctypes.c_long),
+                ("y", ctypes.c_long)]
+
 class PyAutoPlay_win32:
     """base class"""
     def __init__(self):
@@ -45,16 +49,14 @@ class PyAutoPlay_win32:
     def sleep(self, _time: Optional[int]) -> None:
         return time.sleep(_time)
 
-    def images(self, *_image_list, prefix=None):
-        """
-        Full name of image files like 
-         ['D://img1.jpg','D://img2.jpg'] 
-          OR
-         ['img1.jpg','img2.jpg'] with prefix='D://'
-        """
-        pass
 
-    def get_all_hwnd_title(self) -> dict:
+    def position(self) -> tuple:
+        cursor = _POINT()
+        ctypes.windll.user32.GetCursorPos(ctypes.byref(cursor))
+        return (cursor.x, cursor.y)
+
+
+    def get_all_id_title(self) -> dict:
         '''return a dict contains all hwnd and title'''
         hwnd_title = dict()
 
@@ -93,7 +95,9 @@ class PyAutoPlay_win32:
         raise PAGException("ERROR: title '{0}' not found!".format(window_name))
 
     def get_screenshot(self) -> Image.Image:
-        '''return a Image object'''
+        """get screenshot
+        """
+
         hwnd = int(self.hwnd)
         left, top, right, bottom = win32gui.GetWindowRect(hwnd)
         width = right - left
