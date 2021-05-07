@@ -1,11 +1,12 @@
 import os
 import time
-import platform
+import logging
 from PIL import Image
 import cv2
 import numpy as np
 from typing import Union, Optional
 
+logger = logging.getLogger('py_auto_play_adb_main')
 
 class PyAutoPlay_adb():
     """This is the main class of PyAutoPlay containing most of the utilities interacting with window content and user.
@@ -16,7 +17,6 @@ class PyAutoPlay_adb():
     Attributes:
         id (str): A str indicating the device identity.
         title (str): The title of window.
-        platform_info (str): Differentiate from Windows and Linux platforms.
         ratio (double): Ratio is set to height of original picture to standard one's. It is used to resize and
             relocation.
         template_name (list): A list containing the pictures to be recognized. The pictures are provided in str of their
@@ -42,13 +42,15 @@ class PyAutoPlay_adb():
                         via the result of recognition.
                 }
             ]
+        adb_path (str): A str indicating the current path of 'adb.exe'.
     """
 
-    def __init__(self, template_name, precondition, template_path='..\\adb\\template\\', tmp_path='..\\adb\\tmp\\',
+    def __init__(self, template_name, precondition, adb_path, template_path='..\\adb\\template\\', tmp_path='..\\adb\\tmp\\',
                  img_type='PNG', std_height=810):
+        self.logger = logging.getLogger('py_auto_play_adb_main')
+        self.logger.info('Initialing.')
         self.id = None
         self.title = ''
-        self.platform_info = platform.system()
         self.ratio = 1
         self.template_name = template_name
         self.template_path = template_path
@@ -56,17 +58,21 @@ class PyAutoPlay_adb():
         self.img_type = img_type
         self.std_height = std_height
         self.precondition = precondition
+        self.adb_path = adb_path
 
         self.__template_dict = dict()
         self.__precondition_dict = dict()
 
-        os.system('adb devices')
+        answer = os.popen('{} devices'.format(self.adb_path))
+        self.logger.info(answer.read())
 
+        self.logger.info('Creating templates.')
         # Generate the templates stored in __template_dict.
         for template in self.template_name:
             template_full_path = self.template_path + template
             self.__template_dict[template] = cv2.imread(template_full_path, cv2.IMREAD_COLOR)
 
+        self.logger.info('Creating precondition list.')
         # Traverse the list of precondition and fetch the record dict. Then generate the binding information in
         # __precondition_dict.
         for record in self.precondition:
@@ -85,20 +91,23 @@ class PyAutoPlay_adb():
         Returns:
             dict: A dict that holds both the serial number(str) and its name of devices.
         """
+        self.logger.info('Calling get_all_title_id.')
         title_id = dict()
         device_list = []
-        get_devices = os.popen('adb devices')
+        get_devices = os.popen('{} devices'.format(self.adb_path))
         cmd_output = get_devices.read()
+        self.logger.info(cmd_output)
 
         for line in cmd_output.splitlines():
             if line.endswith('device'):
                 device_list.append(line[:line.find('\t')])
 
         for device in device_list:
-            get_titles = os.popen('adb -s {} shell getprop ro.build.id'.format(device))
+            get_titles = os.popen('{} -s {} shell getprop ro.build.id'.format(self.adb_path, device))
             title = get_titles.read().strip()
             title_id[title] = device
 
+        self.logger.info(title_id)
         return title_id
 
     def set_id(self, id):
@@ -110,6 +119,7 @@ class PyAutoPlay_adb():
         Returns:
             None
         """
+        self.logger.info('Calling set_id.')
         self.id = id
 
     def sleep(self, _time):
@@ -134,6 +144,7 @@ class PyAutoPlay_adb():
         Returns:
             Image.Image: a image object to be recognized.
         """
+        self.logger.info('Calling get_screenshot.')
         if not os.path.exists(self.tmp_path):
             os.mkdir(self.tmp_path)
 
@@ -141,24 +152,37 @@ class PyAutoPlay_adb():
         screenshot_path = self.tmp_path + 'screenshot_' + str(os.getpid()) + '.' + self.img_type.lower()
         # The following command should be 'exec-out', which should neglect the replacement of '\r\n' and '\r'.
         # However, most of the tested adb doesn't work out as definition so 'shell' is used here.
-        os.system('adb -s {} shell screencap -p > {}'.format(self.id, screenshot_path))
+        os.system('{} -s {} shell screencap -p > {}'.format(self.adb_path, self.id, screenshot_path))
 
-        if self.platform_info == 'Windows':
-            with open(screenshot_path, 'rb') as f:
-                original_pic = f.read()
+        with open(screenshot_path, 'rb') as f:
+            original_pic = f.read()
+        converted_pic = None
+        if original_pic[4:8] == b'\r\r\r\n':
+            converted_pic = original_pic.replace(b'\r\r\n', b'\n')
+            self.logger.info('Converted \\r\\r\\r\\n.')
+
+        elif original_pic[4:7] == b'\r\r\n':
             converted_pic = original_pic.replace(b'\r\n', b'\n')
-            with open(screenshot_path, 'wb') as f:
-                f.write(converted_pic)
-            f.close()
-        
+            self.logger.info('Converted \\r\\r\\n.')
+
+        elif original_pic[4:6] == b'\r\n':
+            converted_pic = original_pic
+            self.logger.info('No convertion.')
+
+        with open(screenshot_path, 'wb') as f:
+            f.write(converted_pic)
+        f.close()
+
         # The method copy assigned a replica to im and the original image has no reference to it. So it can be safely deleted.
         im = Image.open(screenshot_path).copy()
         original_size = im.size
         if original_size[1] == self.std_height:
             self.ratio = 1
+            self.logger.info('Screenshot ratio == 1.')
 
         else:
             self.ratio = original_size[1] / self.std_height
+            self.logger.info('Screenshot ratio == {}.'.format(self.ratio))
             converted_size = (int(original_size[0] / self.ratio), int(original_size[1] / self.ratio))
             im = im.resize(converted_size)
 
@@ -166,8 +190,7 @@ class PyAutoPlay_adb():
 
         # Temporary screenshot shall be removed after initialization. Because the file name is generated by the pid of
         # python program and differs from each run. If left unattended, tmp directory will be piled up with pngs.
-        # This is a demo version so the temporary file is kept for checking.
-        # os.remove(screenshot_path)
+        os.remove(screenshot_path)
 
         return im
 
@@ -193,6 +216,7 @@ class PyAutoPlay_adb():
                         Usually values over 0.95 if a match is detected.
                 }
         """
+        self.logger.info('Calling recognize.')
         im = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
         image.close()
         recognition_res_dict = dict()
@@ -246,12 +270,13 @@ class PyAutoPlay_adb():
         Returns:
             None
         """
+        self.logger.info('Calling send_action.')
         if delay:
             self.sleep(delay)
 
         # Special action is by default None and only in this case a tap on position is sent directly.
         if action is None:
-            os.system('adb -s {} shell input tap {} {}'.format(self.id, position[0], position[1]))
+            os.system('{} -s {} shell input tap {} {}'.format(self.adb_path, self.id, position[0], position[1]))
 
         else:
             # If action[3](position) is especially designated and not equal to (0, 0),
@@ -271,7 +296,7 @@ class PyAutoPlay_adb():
                     self.sleep(action[1])
 
                 for i in range(action[2]):
-                    os.system('adb -s {} shell input tap {} {}'.format(self.id, position[0], position[1]))
+                    os.system('{} -s {} shell input tap {} {}'.format(self.adb_path, self.id, position[0], position[1]))
             # Completion in future.
             else:
                 pass
