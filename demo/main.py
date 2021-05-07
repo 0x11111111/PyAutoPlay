@@ -1,15 +1,20 @@
+import os
 import time
 import sys
+import re
+import logging
 from arknights_assistant import Arknights
 sys.path.append('..')
 from adb import PyAutoPlay_adb
 
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 
 def main():
 
+    working_path = os.path.dirname(os.path.abspath(__file__))
+    adb_path = working_path + '\\adb.exe'
     template_name = Arknights.template_name
     finish = Arknights.finish
     precondition = Arknights.precondition
@@ -23,7 +28,34 @@ def main():
         "rounds": 0
     }
 
-    pap = PyAutoPlay_adb(template_name, precondition)
+    log_directory_path = working_path + '\\..\\log\\'
+    if not os.path.exists(log_directory_path):
+        os.mkdir(log_directory_path)
+    log_path = log_directory_path + 'main_log_' + str(os.getpid()) + '.log'
+    # Create logger
+    logger = logging.getLogger('py_auto_play_adb_main')
+    logger.setLevel(logging.DEBUG)
+    # Create file handler which logs even debug messages
+    fh = logging.FileHandler(log_path)
+    fh.setLevel(logging.DEBUG)
+    # Create console handler with a higher log level
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.ERROR)
+    # Create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    # Add the handlers to the logger
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+
+    logger.info('Working path: {}'.format(working_path))
+    logger.info('Adb path: {}'.format(adb_path))
+    pap = PyAutoPlay_adb(template_name,
+                         precondition,
+                         adb_path=adb_path,
+                         template_path=working_path+'\\..\\adb\\template\\',
+                         tmp_path=working_path+'\\..\\adb\\tmp\\')
     specific_device = None
     while not specific_device:
         devices_dict = pap.get_all_title_id()
@@ -37,6 +69,7 @@ def main():
                 print("Description:{} Devices id:{}".format(k, v))
 
             input_device = input("Please specify a device id(abbreviation allowed):")
+            logger.info("Input device: {}".format(input_device))
             for k, v in devices_dict.items():
                 if v.startswith(input_device):
                     specific_device = v
@@ -49,7 +82,18 @@ def main():
             input()
 
     pap.set_id(specific_device)
-    rounds = int(input("Input rounds:"))
+
+    rounds = None
+    while not rounds:
+        round_input = input("Input rounds:")
+        logger.info('Input rounds: {}'.format(round_input))
+        number_pattern = re.compile('^\d+$')
+        expression_pattern = re.compile('^\d+/{1,2}\d+$')
+        if re.match(number_pattern, round_input):
+            rounds = int(round_input)
+
+        elif re.match(expression_pattern, round_input):
+            rounds = int(eval(round_input))
     status["rounds"] = rounds
 
     while True:
@@ -72,6 +116,8 @@ def main():
 
             else:
                 print(recognition_res)
+                logger.info(recognition_res)
+
                 if "precondition" not in recognition_res or recognition_res["precondition"]:
                     status["recognized"] = True
 
@@ -104,6 +150,12 @@ def main():
 
                 if status["rounds"] == status["times"]:
                     break
+
+    # Remove the log file.
+    fh.close()
+    ch.close()
+    if os.path.exists(log_path):
+        os.remove(log_path)
 
     input("Fin.")
 
