@@ -8,14 +8,19 @@ import re
 import sys
 import time
 from io import BytesIO, TextIOWrapper
+import logging
 import pyscreeze
 import win32api
 import win32con
 import win32gui
 import win32ui
 from PIL import Image
-from .utils import PAGException
+from .utils import PAPException,PAPImageNotFound
+from .common import sleep
 from typing import Union, Optional, Any
+
+import pyautogui
+logger = logging.getLogger('py_auto_play_win32_main')
 
 __key={
     'mouse_left':[win32con.WM_LBUTTONDOWN,win32con.WM_LBUTTONUP,win32con.MK_LBUTTON],
@@ -28,23 +33,31 @@ class _POINT(ctypes.Structure):
     _fields_ = [("x", ctypes.c_long),
                 ("y", ctypes.c_long)]
 
-class PyAutoPlay_win32:
-    """base class"""
-    def __init__(self):
-        self.img_type = 'JPG'
-        self.left = 0
-        self.right = 0
-        self.bottom = 0
-        self.top = 0
-        self.width = 0
-        self.height = 0
-        self.x = 0
-        self.y = 0
-        self.hwnd = None
-        self.title = ''
+class PyAutoPlayWin32:
+    """This is the main class of PyAutoPlay_win32
+    
+    Attributes:
 
-    def set_hwnd(self, hwnd: Optional[int]) -> None:
-        self.hwnd = hwnd
+
+    """
+    def __init__(self,template_name:list,precondition:list=None,template_path:str=None, img_type='PNG'):
+        self.id = None
+        self.title = ''
+        self.radio=1
+        self.template_name=template_name
+        self.template_path=template_path
+        self.img_type=img_type
+        self.precondition=precondition
+        self.__template_dict = dict()
+        self.__precondition_dict = dict()
+
+        for template in self.template_name:
+            template_full_path=self.template_path+template
+            self.__template_dict[template]=cv2.imread(template_full_path,1)
+
+
+    def set_id(self, id: Optional[int]) -> None:
+        self.id = id
 
     def sleep(self, _time: Optional[int]) -> None:
         return time.sleep(_time)
@@ -57,7 +70,7 @@ class PyAutoPlay_win32:
 
 
     def get_all_id_title(self) -> dict:
-        '''return a dict contains all hwnd and title'''
+        """return a dict contains all hwnd and title"""
         hwnd_title = dict()
 
         def get_all_hwnd(hwnd, mouse):
@@ -73,7 +86,7 @@ class PyAutoPlay_win32:
     def find_title_custom(self, window_name: Optional[str]) -> dict:
         ''' find_title_custom'''
         self.title = window_name
-        hwnd_title = self.get_all_hwnd_title()
+        hwnd_title = self.get_all_id_title()
         match_hwnd_title = dict()
         for h, t in hwnd_title.items():
             if window_name in t:
@@ -86,19 +99,19 @@ class PyAutoPlay_win32:
         for h, t in hwnd_title.items():
             if window_name in t:
                 return int(h)
-        raise PAGException("ERROR: title '{0}' not found!".format(window_name))
+        raise PAPException("ERROR: title '{0}' not found!".format(window_name))
 
     def find_all_title(self, window_name: Optional[str]) -> dict:
         """return a dict contains all matched hwnd and title"""
         if m_h_t := self.find_title_custom(window_name) != {}:
             return m_h_t
-        raise PAGException("ERROR: title '{0}' not found!".format(window_name))
+        raise PAPException("ERROR: title '{0}' not found!".format(window_name))
 
     def get_screenshot(self) -> Image.Image:
         """get screenshot
         """
 
-        hwnd = int(self.hwnd)
+        hwnd = int(self.id)
         left, top, right, bottom = win32gui.GetWindowRect(hwnd)
         width = right - left
         height = bottom - top
@@ -151,12 +164,12 @@ class PyAutoPlay_win32:
         if key in ['mouse_left','mouse_middle','mouse_right']:
             _key=__key['key']
         else:
-            raise PAGException("key {0} not found, please check available list".format(key))
+            raise PAPException("key {0} not found, please check available list".format(key))
         
-        win32gui.SendMessage(self.hwnd, _key[0], win32con.WA_ACTIVE, 0)
-        win32api.SendMessage(self.hwnd, win32con.WM_LBUTTONDOWN,win32con.MK_LBUTTON, _pos)
+        win32gui.SendMessage(self.id, _key[0], win32con.WA_ACTIVE, 0)
+        win32api.SendMessage(self.id, win32con.WM_LBUTTONDOWN,win32con.MK_LBUTTON, _pos)
         self.sleep(hold_time)
-        win32api.SendMessage(self.hwnd, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, _pos)
+        win32api.SendMessage(self.id, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, _pos)
 
     def sendkey(self, image, key: str, times=1, interval=0.1):
         """

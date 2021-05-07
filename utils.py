@@ -3,5 +3,5 @@
 class PAPException(Exception):
     """PyAutoPlay Exception"""
 
-class PAP_ImageNotFound(PAPException):
+class PAPImageNotFound(PAPException):
     """PyAutoPlay image not found exception"""
