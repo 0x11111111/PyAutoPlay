@@ -46,7 +46,7 @@ class PyAutoPlay_adb():
     """
 
     def __init__(self, template_name, precondition, adb_path, template_path='..\\adb\\template\\', tmp_path='..\\adb\\tmp\\',
-                 img_type='PNG', std_height=810):
+                 img_type='PNG', std_height=810,pre_read=False):
         self.logger = logging.getLogger('py_auto_play_adb_main')
         self.logger.info('Initialing.')
         self.id = None

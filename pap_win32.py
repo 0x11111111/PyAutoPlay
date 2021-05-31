@@ -15,8 +15,8 @@ import win32con
 import win32gui
 import win32ui
 from PIL import Image
-from .utils import PAPException,PAPImageNotFound
-from .common import sleep
+from utils import PAPException,PAPImageNotFound
+from common import sleep
 from typing import Union, Optional, Any
 
 import pyautogui
@@ -33,14 +33,19 @@ class _POINT(ctypes.Structure):
     _fields_ = [("x", ctypes.c_long),
                 ("y", ctypes.c_long)]
 
-class PyAutoPlayWin32:
+class PyAutoPlay_windows:
     """This is the main class of PyAutoPlay_win32
     
     Attributes:
 
 
     """
-    def __init__(self,template_name:list,precondition:list=None,template_path:str=None, img_type='PNG'):
+    def __init__(self,                 
+                 template_name:    str = None,
+                 precondition:     dict = None,
+                 img_type:         str = 'PNG',
+                 template_path:    str = '',
+                 pre_read:         bool = False,):
         self.id = None
         self.title = ''
         self.radio=1
@@ -50,10 +55,7 @@ class PyAutoPlayWin32:
         self.precondition=precondition
         self.__template_dict = dict()
         self.__precondition_dict = dict()
-
-        for template in self.template_name:
-            template_full_path=self.template_path+template
-            self.__template_dict[template]=cv2.imread(template_full_path,1)
+        print('hello')
 
 
     def set_id(self, id: Optional[int]) -> None:
