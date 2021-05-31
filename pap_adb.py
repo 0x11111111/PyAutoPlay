@@ -103,12 +103,25 @@ class PyAutoPlay_adb():
                 device_list.append(line[:line.find('\t')])
 
         for device in device_list:
-            get_titles = os.popen('{} -s {} shell getprop ro.build.id'.format(self.adb_path, device))
+            get_titles = os.popen('{} -s {} shell getprop ro.product.brand'.format(self.adb_path, device))
             title = get_titles.read().strip()
             title_id[title] = device
 
         self.logger.info(title_id)
         return title_id
+
+    def set_port(self, port):
+        """Attempt to connect 127.0.0.1:{port}.
+
+        Args:
+            port (int): a port number of the emulator.
+
+        Returns:
+            dict: A dict that holds both the serial number(str) and its name of devices.
+        """
+        os.popen('{} connect 127.0.0.1:{}'.format(self.adb_path, port))
+
+        return self.get_all_title_id()
 
     def set_id(self, id):
         """Set the Attribute self.id to id.
