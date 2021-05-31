@@ -4,15 +4,14 @@ import sys
 import re
 import logging
 from arknights_assistant import Arknights
-sys.path.append('..')
-from adb import PyAutoPlay_adb
+from pap_adb import PyAutoPlay_adb
 
 
-__version__ = '0.4.1'
+__version__ = '0.4.2'
 
 
 def main():
-
+    print('初始化中。请稍等。')
     working_path = os.path.dirname(os.path.abspath(__file__))
     adb_path = working_path + '\\adb.exe'
     template_name = Arknights.template_name
@@ -61,31 +60,48 @@ def main():
         devices_dict = pap.get_all_title_id()
 
         if len(devices_dict) == 1:
+            print('是该设备吗？回车继续，否则请输入模拟器adb调试端口号: ')
             for k, v in devices_dict.items():
-                specific_device = v
+                print('描述:{} 设备id:{}'.format(k, v))
+
+            ans = input()
+            if re.match('^\d+$', ans):
+                port_number = int(ans)
+                pap.set_port(port_number)
+
+            else:
+                for k, v in devices_dict.items():
+                    specific_device = v
 
         elif len(devices_dict) > 1:
             for k, v in devices_dict.items():
-                print("Description:{} Devices id:{}".format(k, v))
+                print('描述:{} 设备id:{}'.format(k, v))
 
-            input_device = input("Please specify a device id(abbreviation allowed):")
-            logger.info("Input device: {}".format(input_device))
+            input_device = input('请指定一个设备id(允许缩写):')
+            logger.info('Input device: {}'.format(input_device))
             for k, v in devices_dict.items():
                 if v.startswith(input_device):
                     specific_device = v
 
             if not specific_device:
-                print("No devices matched.")
+                print('未匹配到设备。请重试或直接输入模拟器adb调试端口号: ')
+                ans = input()
+                if re.match('^\d+$', ans):
+                    port_number = int(ans)
+                    pap.set_port(port_number)
 
         elif len(devices_dict) == 0:
-            print("No devices detected. Please retry.")
-            input()
+            print('未匹配到设备。请重试或直接输入模拟器adb调试端口号: ')
+            ans = input()
+            if re.match('^\d+$', ans):
+                port_number = int(ans)
+                pap.set_port(port_number)
 
     pap.set_id(specific_device)
 
     rounds = None
     while not rounds:
-        round_input = input("Input rounds:")
+        round_input = input('请输入轮数:')
         logger.info('Input rounds: {}'.format(round_input))
         number_pattern = re.compile('^\d+$')
         expression_pattern = re.compile('^\d+/{1,2}\d+$')
@@ -94,43 +110,44 @@ def main():
 
         elif re.match(expression_pattern, round_input):
             rounds = int(eval(round_input))
-    status["rounds"] = rounds
+    status['rounds'] = rounds
 
     while True:
-        time.sleep(status["interval"])
+        time.sleep(status['interval'])
 
-        if (status["recognized"], status["captured"]) == (False, False):
+        if (status['recognized'], status['captured']) == (False, False):
             captured = pap.get_screenshot()
             while not (captured):
                 captured = pap.get_screenshot()
                 continue
 
-            status["captured"] = True
-            status["ratio"] = pap.ratio
+            status['captured'] = True
+            status['ratio'] = pap.ratio
 
             recognition_res = pap.recognize(captured)
             if not recognition_res:
-                status["recognized"] = False
-                status["captured"] = False
+                status['recognized'] = False
+                status['captured'] = False
                 continue
 
             else:
                 print(recognition_res)
                 logger.info(recognition_res)
 
-                if "precondition" not in recognition_res or recognition_res["precondition"]:
-                    status["recognized"] = True
+                if 'precondition' not in recognition_res or recognition_res['precondition']:
+                    status['recognized'] = True
 
                 else:
-                    status["recognized"] = False
-                    status["captured"] = False
+                    status['recognized'] = False
+                    status['captured'] = False
                     print(recognition_res["warning"])
 
-            if status["recognized"]:
-                recognized_position = recognition_res["position"]
-                recognized_ratio = status["ratio"]
-                if recognition_res["template"] == status["finish"]:
-                    status["times"] += 1
+            if status['recognized']:
+                recognized_position = recognition_res['position']
+                recognized_ratio = status['ratio']
+                if recognition_res['template'] == status['finish']:
+                    status['times'] += 1
+                    print('剩余轮数: {}'.format(status['times']))
 
                 if recognized_ratio != 1:
                     tap_position = (int(recognized_position[0] * recognized_ratio),
@@ -145,10 +162,10 @@ def main():
                 else:
                     pap.send_action(tap_position)
 
-                status["recognized"] = False
-                status["captured"] = False
+                status['recognized'] = False
+                status['captured'] = False
 
-                if status["rounds"] == status["times"]:
+                if status['rounds'] == status['times']:
                     break
 
     # Remove the log file.
@@ -157,7 +174,7 @@ def main():
     if os.path.exists(log_path):
         os.remove(log_path)
 
-    input("Fin.")
+    input('Fin.')
 
 
 if __name__ == '__main__':
