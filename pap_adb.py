@@ -9,7 +9,7 @@ from typing import Union, Optional
 logger = logging.getLogger('py_auto_play_adb_main')
 
 class PyAutoPlay_adb():
-    """This is the main class of PyAutoPlay containing most of the utilities interacting with window content and user.
+    """This is the main class of PyAutoPlay containing   most of the utilities interacting with window content and user.
 
     The instance of this class serves as a broker to handle screenshot, resize, conversion, recognition and
         implementation of actions.
